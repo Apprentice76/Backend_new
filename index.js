@@ -7,6 +7,13 @@ const mongoose = require('mongoose')
 const cors = require('cors')
 const multer = require('multer')
 const PersonModel = require('./model/model')
+const express = require('express')
+const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
+const mongoose = require('mongoose')
+const cors = require('cors')
+const multer = require('multer')
+const PersonModel = require('./model/model')
 
 const userdb = [
 	{
@@ -128,11 +135,49 @@ const verifyToken = (req, res, next) => {
 	next()
 }
 
+app.put('/uploadEdited/:id/:type', (req, res, next) => {
+	try {
+		const id = req.params.id
+		const type = req.params.type
+		console.log('uploadEdited', type)
+		upload(req, res, async (err) => {
+			if (err) {
+				next(err)
+			} else {
+				// const person = await PersonModel.findById(id)
+				// console.log(req.file)
+				if (type === 'identity') {
+					const updatedPerson = {
+						// ...person,
+						documents: {
+							// ...person?.documents,
+							identity: {
+								// ...person?.documents?.identity,
+								data: req.file.buffer,
+							},
+						},
+					}
+					PersonModel.findByIdAndUpdate(id, updatedPerson, {
+						new: true,
+					}).then(() => {
+						return res
+							.status(200)
+							.send({ message: `Updated ${type} data` })
+					})
+				}
+			}
+		})
+	} catch (err) {
+		next(err)
+		return res.status(400).send(err.message)
+	}
+})
+
 app.put('/uploadRaw/:id/:type', (req, res, next) => {
 	try {
 		const id = req.params.id
-        const type = req.params.type
-        console.log('uploadRaw', type)
+		const type = req.params.type
+		console.log('uploadRaw', type)
 		upload(req, res, async (err) => {
 			if (err) {
 				next(err)
@@ -153,8 +198,10 @@ app.put('/uploadRaw/:id/:type', (req, res, next) => {
 					}
 					PersonModel.findByIdAndUpdate(id, updatedPerson, {
 						new: true,
-					}).then((resp) => {
-						return res.status(200).send(resp)
+					}).then(() => {
+						return res
+							.status(200)
+							.send({ message: `Updated ${type} raw` })
 					})
 				}
 			}
@@ -166,16 +213,16 @@ app.put('/uploadRaw/:id/:type', (req, res, next) => {
 })
 
 app.get('/getRaw/:id/:type', (req, res, next) => {
-    try {
-        const id = req.params.id
-        const type = req.params.type
-        console.log('getRaw', type)
-        if (type === 'identity') {
-            PersonModel.findById(id).then(resp => {
-                const identity = resp?.documents?.identity
-                return res.status(200).send(identity)
-            })
-        }
+	try {
+		const id = req.params.id
+		const type = req.params.type
+		console.log('getRaw', type)
+		if (type === 'identity') {
+			PersonModel.findById(id).then((resp) => {
+				const identity = resp?.documents?.identity
+				return res.status(200).send(identity)
+			})
+		}
 	} catch (err) {
 		next(err)
 		return res.status(400).send(err.message)
