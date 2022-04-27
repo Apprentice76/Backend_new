@@ -1,12 +1,5 @@
-// require('dotenv').config()
+if (process.env.NODE_ENV === 'dev') require('dotenv').config()
 
-// const express = require('express')
-// const bcrypt = require('bcrypt')
-// const jwt = require('jsonwebtoken')
-// const mongoose = require('mongoose')
-// const cors = require('cors')
-// const multer = require('multer')
-// const PersonModel = require('./model/model')
 const express = require('express')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
@@ -24,18 +17,18 @@ const userdb = [
 	},
 ]
 
-const storage = multer.memoryStorage({
-	destination: (req, file, callback) => {
-		callback(null, '')
-	},
-})
+// const storage = multer.memoryStorage({
+// 	destination: (req, file, callback) => {
+// 		callback(null, '')
+// 	},
+// })
 
-const upload = multer({
-	storage: storage,
-	// limits: {
-	// 	fieldSize: 1024 * 1024 * 2,
-	// },
-}).single('raw')
+// const upload = multer({
+// 	storage: storage,
+// 	// limits: {
+// 	// 	fieldSize: 1024 * 1024 * 2,
+// 	// },
+// }).single('raw')
 
 const app = express()
 
@@ -44,6 +37,7 @@ app.use(cors())
 
 const errorHandler = (err, req, res, next) => {
 	console.log(err.message)
+	return res.status(500).send(err.message)
 }
 
 app.use(errorHandler)
@@ -81,7 +75,7 @@ app.post('/register', async (req, res, next) => {
 
 		return res.status(201).json(newUser)
 	} catch (err) {
-		next(err)
+		return next(err)
 	}
 })
 
@@ -114,7 +108,7 @@ app.post('/login', async (req, res, next) => {
 		}
 		return res.status(400).send({ message: 'Invalid Credentials.' })
 	} catch (err) {
-		next(err)
+		return next(err)
 	}
 })
 
@@ -140,11 +134,13 @@ app.put('/uploadEdited/:id/:type', (req, res, next) => {
 		const id = req.params.id
 		const type = req.params.type
 		console.log('uploadEdited', type)
+		const upload = multer({ storage: multer.memoryStorage() }).single(
+			'edited'
+		)
 		upload(req, res, async (err) => {
 			if (err) {
-				next(err)
+				return next(err)
 			} else {
-				// const person = await PersonModel.findById(id)
 				// console.log(req.file)
 				if (type === 'identity') {
 					const updatedPerson = {
@@ -168,8 +164,7 @@ app.put('/uploadEdited/:id/:type', (req, res, next) => {
 			}
 		})
 	} catch (err) {
-		next(err)
-		return res.status(400).send(err.message)
+		return next(err)
 	}
 })
 
@@ -178,11 +173,11 @@ app.put('/uploadRaw/:id/:type', (req, res, next) => {
 		const id = req.params.id
 		const type = req.params.type
 		console.log('uploadRaw', type)
+		const upload = multer({ storage: multer.memoryStorage() }).single('raw')
 		upload(req, res, async (err) => {
 			if (err) {
-				next(err)
+				return next(err)
 			} else {
-				// const person = await PersonModel.findById(id)
 				// console.log(req.file)
 				if (type === 'identity') {
 					const updatedPerson = {
@@ -207,8 +202,7 @@ app.put('/uploadRaw/:id/:type', (req, res, next) => {
 			}
 		})
 	} catch (err) {
-		next(err)
-		return res.status(400).send(err.message)
+		return next(err)
 	}
 })
 
@@ -224,8 +218,7 @@ app.get('/getRaw/:id/:type', (req, res, next) => {
 			})
 		}
 	} catch (err) {
-		next(err)
-		return res.status(400).send(err.message)
+		return next(err)
 	}
 })
 
@@ -233,7 +226,6 @@ app.post('/createPerson', verifyToken, (req, res, next) => {
 	// if (req.body === null) {
 	//     const err = { message: 'Missing Body' }
 	//     next(err)
-	//     return res.status(400).send(err)
 	// }
 	try {
 		console.log(req.body)
@@ -243,8 +235,7 @@ app.post('/createPerson', verifyToken, (req, res, next) => {
 			res.status(201).send(item)
 		})
 	} catch (err) {
-		next(err)
-		res.status(400).send(err)
+		return next(err)
 	}
 })
 
