@@ -213,7 +213,8 @@ app.get('/getRaw/:id/:type', (req, res, next) => {
 		console.log('getRaw', type)
 		if (type === 'identity') {
 			PersonModel.findById(id).then((resp) => {
-				const identity = resp?.documents?.identity
+                const identity = resp?.documents?.identity
+                console.log(resp.name)
 				return res.status(200).send(identity)
 			})
 		}
