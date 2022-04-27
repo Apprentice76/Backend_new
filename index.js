@@ -150,6 +150,7 @@ app.put('/uploadEdited/:id/:type', (req, res, next) => {
 							identity: {
 								// ...person?.documents?.identity,
 								data: req.file.buffer,
+								contentType: 'image/jpeg',
 							},
 						},
 					}
@@ -244,6 +245,22 @@ app.get('/getqr', verifyToken, () => {})
 
 app.get('/checkValidity', verifyToken, (req, res) => {
 	res.status(200).send({ message: 'Token Valid' })
+})
+
+app.get('/getDatabase', (req, res, next) => {
+	PersonModel.find({}, '-documents')
+		.then((resp) => res.status(200).send(resp))
+		.catch((err) => next(err))
+})
+
+app.delete('/removePerson/:id', (req, res, next) => {
+	const id = req.params.id
+	PersonModel.findByIdAndDelete(id)
+		.then((resp) => {
+			console.log(`Deleted Person: ${resp.name}`)
+			res.status(200).send({ message: `Deleted Person: ${resp.name}` })
+		})
+		.catch((err) => next(err))
 })
 
 const PORT = process.env.PORT || 4000
