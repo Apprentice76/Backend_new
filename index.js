@@ -129,7 +129,7 @@ const verifyToken = (req, res, next) => {
 	next()
 }
 
-app.put('/uploadEdited/:id/:type', (req, res, next) => {
+app.put('/uploadEdited/:id/:type', verifyToken, (req, res, next) => {
 	try {
 		const id = req.params.id
 		const type = req.params.type
@@ -207,15 +207,15 @@ app.put('/uploadRaw/:id/:type', (req, res, next) => {
 	}
 })
 
-app.get('/getRaw/:id/:type', (req, res, next) => {
+app.get('/getRaw/:id/:type', verifyToken, (req, res, next) => {
 	try {
 		const id = req.params.id
 		const type = req.params.type
 		console.log('getRaw', type)
 		if (type === 'identity') {
 			PersonModel.findById(id).then((resp) => {
-                const identity = resp?.documents?.identity
-                console.log(resp.name)
+				const identity = resp?.documents?.identity
+				console.log(resp.name)
 				return res.status(200).send(identity)
 			})
 		}
@@ -247,13 +247,13 @@ app.get('/checkValidity', verifyToken, (req, res) => {
 	res.status(200).send({ message: 'Token Valid' })
 })
 
-app.get('/getDatabase', (req, res, next) => {
+app.get('/getDatabase', verifyToken, (req, res, next) => {
 	PersonModel.find({}, '-documents')
 		.then((resp) => res.status(200).send(resp))
 		.catch((err) => next(err))
 })
 
-app.delete('/removePerson/:id', (req, res, next) => {
+app.delete('/removePerson/:id', verifyToken, (req, res, next) => {
 	const id = req.params.id
 	PersonModel.findByIdAndDelete(id)
 		.then((resp) => {
