@@ -6,7 +6,10 @@ const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose')
 const cors = require('cors')
 const multer = require('multer')
-const PersonModel = require('./model/model')
+const PersonModel = require('./model/person')
+const OperatorModel = require('./model/operator')
+const log = require('./util/log')
+const seq = require('./util/genNumber')
 
 const userdb = [
 	{
@@ -90,15 +93,22 @@ app.post('/login', async (req, res, next) => {
 			return res.status(400).send({ message: 'Input field(s) empty.' })
 		}
 
-		const user = userdb.find((o) => o.user === usr)
-
-		if (user && (await bcrypt.compare(pwd, user.password))) {
+		// const user = userdb.find((o) => o.user === usr)
+		const passHash = await bcrypt.hash(pwd, 1)
+		const user = await OperatorModel.find({
+			name: usr,
+			passwordHash: passHash,
+    })
+    console.log(user)
+		// if (user && (await bcrypt.compare(pwd, user.pass))) {
+		if (user) {
 			const token = jwt.sign({ usr }, process.env.TOKEN_SECRET_64, {
 				expiresIn: '1d',
 			})
 
 			userDetails = {
-				user: user.user,
+        user: user.user,
+        opId: user.operatorID,
 				token: token,
 			}
 
@@ -120,7 +130,9 @@ const verifyToken = (req, res, next) => {
 		return res.status(403).send({ message: 'User not logged in.' })
 
 	try {
+		// console.log(token)
 		const user = jwt.verify(token, process.env.TOKEN_SECRET_64)
+
 		req.user = user
 	} catch (err) {
 		return res.status(401).send('Token expired or invalid.')
@@ -156,7 +168,9 @@ app.put('/uploadEdited/:id/:type', verifyToken, (req, res, next) => {
 					}
 					PersonModel.findByIdAndUpdate(id, updatedPerson, {
 						new: true,
-					}).then(() => {
+          }).then((docu) => {
+            // log(req.body.opId, 'uploaded Edited')
+            // console.log(docu)
 						return res
 							.status(200)
 							.send({ message: `Updated ${type} data` })
@@ -230,8 +244,13 @@ app.post('/createPerson', verifyToken, (req, res, next) => {
 	//     next(err)
 	// }
 	try {
-		console.log(req.body)
-		const person = new PersonModel(req.body)
+    console.log(req.body)
+    const person_data = {
+      name: req.body.name,
+      phone: req.body.phone,
+      aadhar: seq()
+    }
+		const person = new PersonModel(person_data)
 		person.save().then((item) => {
 			// console.log(item)
 			res.status(201).send(item)
@@ -261,6 +280,38 @@ app.delete('/removePerson/:id', verifyToken, (req, res, next) => {
 			res.status(200).send({ message: `Deleted Person: ${resp.name}` })
 		})
 		.catch((err) => next(err))
+})
+
+app.post('/regOp', async (req, res, next) => {
+	const data = req.body
+	if (data.key && data.key === '2345') {
+		const encryptedPass = await bcrypt.hash(data.pass, 10)
+		const opId = await bcrypt.hash(data.phone, 1)
+		const newOp = {
+			name: data.name,
+			passwordHash: encryptedPass,
+			phone: data.phone,
+			operatorID: opId,
+		}
+		const opr = new OperatorModel(newOp)
+		opr.save()
+			.then((item) => res.status(201).send(item))
+			.catch((err) => next(err))
+	} else {
+		res.status(500).send({ message: 'Unk Error' })
+	}
+})
+
+app.post('/getId', async (req, res, next) => {
+  try {
+    const aadhar = req.body.aadhar
+    console.log(aadhar)
+    const person = await PersonModel.findOne({ aadhar: Number(aadhar) })
+    // console.log(person)
+    res.status(200).send({ id: person.id.toString() })
+  } catch (err) {
+    next(err)
+  }
 })
 
 const PORT = process.env.PORT || 4000

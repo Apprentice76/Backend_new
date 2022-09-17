@@ -1,22 +1,10 @@
-const mongoose = require('mongoose')
-
-const mongo_url = process.env.MONGO_URL_2
-
-// console.log(mongo_url)
-
-mongoose
-	.connect(mongo_url)
-	.then(() => {
-		console.log('db connected')
-	})
-	.catch((err) => {
-		console.log(err.message)
-	})
+const mongoose = require('./mongoose')
 
 const personSchema = new mongoose.Schema(
 	{
 		name: String,
-		age: Number,
+    phone: Number,
+    aadhar: Number,
 		documents: {
 			identity: {
 				name: String,
